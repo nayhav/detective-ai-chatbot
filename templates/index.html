@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Detective AI Chatbot</title>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; padding: 20px; }
+        #chatbox { width: 60%; margin: auto; border: 1px solid #ddd; padding: 10px; height: 300px; overflow-y: auto; }
+        input { width: 70%; padding: 10px; }
+        button { padding: 10px 15px; }
+    </style>
+</head>
+<body>
+
+    <h2>🔎 Detective AI: Solve the Mystery!</h2>
+    <div id="chatbox"></div>
+
+    <input type="text" id="userInput" placeholder="Ask a question...">
+    <button onclick="sendMessage()">Send</button>
+
+    <script>
+        async function sendMessage() {
+            let userInput = document.getElementById("userInput").value;
+            document.getElementById("userInput").value = "";
+
+            let chatbox = document.getElementById("chatbox");
+            chatbox.innerHTML += `<p><b>You:</b> ${userInput}</p>`;
+
+            let response = await fetch("/ask", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ question: userInput })
+            });
+
+            let data = await response.json();
+            chatbox.innerHTML += `<p><b>Detective AI:</b> ${data.response}</p>`;
+            chatbox.scrollTop = chatbox.scrollHeight;
+        }
+    </script>
+
+</body>
+</html>
+
