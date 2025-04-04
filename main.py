@@ -29,16 +29,18 @@ def clues():
 def ask():
     """Detective asks a question to Gemini AI."""
     data = request.json
+    user_id = data.get("user_id", "default_user")  # Use a default ID if missing
     user_input = data.get("question", "").strip()
 
     if not user_input:
-        return jsonify({"error": "Please provide a question."}), 400
+        return jsonify({"response": "Please provide a valid question."}), 400
 
     try:
-        ai_response = ask_gemini(user_input)
-        return jsonify({"response": ai_response})
+        ai_response = ask_gemini(user_id, user_input)
+        return jsonify(ai_response)  # Ensure JSON format
     except Exception as e:
-        return jsonify({"error": f"An error occurred while processing the question: {str(e)}"}), 500
+        return jsonify({"response": f"An error occurred: {str(e)}"}), 500
+
 
 @app.route("/accuse", methods=["POST"])
 def accuse():

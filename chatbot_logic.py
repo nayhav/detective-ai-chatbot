@@ -1,30 +1,39 @@
-# chatbot_logic.py
 import os
-print(os.getcwd())
 from dotenv import load_dotenv
+from case_data import CASE_DETAILS
 from google.generativeai import GenerativeModel, configure
-from case_data import CASE_DETAILS  
-
 
 load_dotenv()
 
-
+# Load Gemini API Key
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+if not GEMINI_API_KEY:
+    raise ValueError("❌ Error: Gemini API key not found. Check .env file.")
 
-
-from google.generativeai import GenerativeModel, configure
+# Configure Gemini AI Model
 configure(api_key=GEMINI_API_KEY)
 model = GenerativeModel('gemini-2.0-flash')
 
-def ask_gemini(user_input):
-    """Sends a query to Gemini AI with a strict detective context."""
+# In-memory session store (for user context)
+user_sessions = {}
+
+def ask_gemini(user_id, user_input):
+    """Sends a query to Gemini AI with case context and user memory."""
+    
+    # Retrieve or initialize conversation history
+    if user_id not in user_sessions:
+        user_sessions[user_id] = []
+
+    conversation_history = user_sessions[user_id]
+    conversation_history.append(f"User: {user_input}")
+
     try:
         prompt = f"""
         You are a detective AI assisting in a murder investigation.
-        Your job is to help analyze evidence, suspects, and clues.
-        You **must only** answer questions related to the murder case.
+        Your job is to analyze evidence, suspects, and clues.
+        You must only answer questions related to the murder case.
 
-        If the user asks anything unrelated (e.g., sports, general trivia, weather), reply:
+        If the user asks anything unrelated, reply:
         "Detective, stay focused! We have a case to solve."
 
         Case Details:
@@ -34,49 +43,62 @@ def ask_gemini(user_input):
         - Suspects: {', '.join(CASE_DETAILS['suspects'].keys())}
         - Clues: {', '.join(CASE_DETAILS['clues'].keys())}
 
+        Previous Conversation:
+        {chr(10).join(conversation_history[-5:])}
+
         User Inquiry:
         "{user_input}"
         """
 
-        response = model.generate_content(prompt) 
+        response = model.generate_content(prompt)
 
-        if hasattr(response, "text"):
-            return response.text.strip()
-        else:
-            return "Gemini responded, but no text was found"
+        # Handle API response properly
+        if not response or not hasattr(response, "text") or not response.text:
+            return {"response": "Sorry, I'm having trouble processing that. Try again."}
+
+        ai_reply = response.text.strip()
+        conversation_history.append(f"AI: {ai_reply}")
+
+        # Limit history to last 20 messages
+        user_sessions[user_id] = conversation_history[-20:]
+
+        return {"response": ai_reply}  # Always return a JSON object
 
     except Exception as e:
-        print(f"Full Gemini API Error: {e}") 
-        return f"Error: {e}"
+        print(f"❌ Gemini API Error: {e}")
+        return {"response": f"Error: {e}"}  # Return JSON instead of None
 
 def get_intro():
     """Returns the introduction to the mystery."""
-    return f"Detective, a murder has occurred!\n\nVictim: {CASE_DETAILS['victim']}\nScene: {CASE_DETAILS['crime_scene']}\nTime of Death: {CASE_DETAILS['time_of_death']}\n\nYour task: Identify the killer!"
+    return {
+        "message": f"Detective, a murder has occurred!\n\n"
+                   f"Victim: {CASE_DETAILS['victim']}\n"
+                   f"Scene: {CASE_DETAILS['crime_scene']}\n"
+                   f"Time of Death: {CASE_DETAILS['time_of_death']}\n\n"
+                   f"Your task: Identify the killer!"
+    }
 
 def get_suspect_info():
     """Returns a formatted list of suspects."""
     suspects = "\n".join([f"- {s}: {desc}" for s, desc in CASE_DETAILS['suspects'].items()])
-    return f"Suspects:\n{suspects}"
+    return {"message": f"Suspects:\n{suspects}"}
 
 def get_clues():
     """Returns discovered clues."""
     clues = "\n".join([f"- {c}: {desc}" for c, desc in CASE_DETAILS['clues'].items()])
-    return f"Clues found:\n{clues}"
+    return {"message": f"Clues found:\n{clues}"}
 
-def get_response(user_input):
+def get_response(user_id, user_input):
     """Handles user input and provides appropriate responses."""
-    responses = {
-        "hello": "Hello, Detective! How can I assist you in solving this case?",
-        "who is the suspect": get_suspect_info(),
-        "who was the victim": f"The victim was {CASE_DETAILS['victim']}, found dead in {CASE_DETAILS['crime_scene']}.",
-        "what clues do we have?": get_clues(),
-        "default": "I'm not sure about that. Try asking about the suspects or evidence."
-    }
+    user_input = user_input.lower().strip()
 
-    if user_input.lower() in responses:
-        return responses[user_input.lower()]
+    if user_input in ["hello", "hi"]:
+        return {"response": "Hello, Detective! How can I assist you in solving this case?"}
+    elif "suspect" in user_input:
+        return get_suspect_info()
+    elif "victim" in user_input:
+        return {"response": f"The victim was {CASE_DETAILS['victim']}, found in {CASE_DETAILS['crime_scene']}."}
+    elif "clues" in user_input:
+        return get_clues()
     else:
-    
-        return ask_gemini(user_input)
-
-print(f"API Key: {GEMINI_API_KEY}") 
+        return {"response": ask_gemini(user_id, user_input)}
