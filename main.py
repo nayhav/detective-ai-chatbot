@@ -1,6 +1,6 @@
 # main.py
 from flask import Flask, render_template, request, jsonify
-from chatbot_logic import ask_gemini, get_intro, get_suspect_info, get_clues
+from chatbot_logic import ask_gemini, get_intro, get_suspect_info, get_clues, get_response
 from case_data import CASE_DETAILS  
 
 app = Flask(__name__)
@@ -36,11 +36,11 @@ def ask():
         return jsonify({"response": "Please provide a valid question."}), 400
 
     try:
-        ai_response = ask_gemini(user_id, user_input)
-        return jsonify(ai_response)  # Ensure JSON format
+        # ✅ NEW LINE: Use get_response instead of just ask_gemini
+        response = get_response(user_id, user_input)
+        return jsonify(response)  # Already a well-structured dictionary
     except Exception as e:
         return jsonify({"response": f"An error occurred: {str(e)}"}), 500
-
 
 @app.route("/accuse", methods=["POST"])
 def accuse():

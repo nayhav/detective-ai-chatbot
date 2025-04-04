@@ -92,8 +92,8 @@ def get_response(user_id, user_input):
     """Handles user input and provides appropriate responses."""
     user_input = user_input.lower().strip()
 
-    if user_input in ["hello", "hi"]:
-        return {"response": "Hello, Detective! How can I assist you in solving this case?"}
+    if user_input in ["hello", "hi", "hey", "yo", "greetings"]:
+        return {"response": "Hello, Detective! Ready to crack the case?"}
     elif "suspect" in user_input:
         return get_suspect_info()
     elif "victim" in user_input:
@@ -101,4 +101,5 @@ def get_response(user_id, user_input):
     elif "clues" in user_input:
         return get_clues()
     else:
-        return {"response": ask_gemini(user_id, user_input)}
+        
+        return ask_gemini(user_id, user_input)
