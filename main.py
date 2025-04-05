@@ -25,22 +25,13 @@ def clues():
     """Get discovered clues."""
     return jsonify({"message": get_clues()})
 
+# TODO: Implement this route
 @app.route("/ask", methods=["POST"])
 def ask():
     """Detective asks a question to Gemini AI."""
-    data = request.json
-    user_id = data.get("user_id", "default_user")  # Use a default ID if missing
-    user_input = data.get("question", "").strip()
+    # Your code here!
+    pass
 
-    if not user_input:
-        return jsonify({"response": "Please provide a valid question."}), 400
-
-    try:
-        # ✅ NEW LINE: Use get_response instead of just ask_gemini
-        response = get_response(user_id, user_input)
-        return jsonify(response)  # Already a well-structured dictionary
-    except Exception as e:
-        return jsonify({"response": f"An error occurred: {str(e)}"}), 500
 
 @app.route("/accuse", methods=["POST"])
 def accuse():
