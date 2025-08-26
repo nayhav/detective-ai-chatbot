@@ -1,7 +1,10 @@
 # Detective AI Chatbot
 
 This is a Detective AI chatbot built with Flask and the Gemini API.
+
+
 Presented at the AI Chatbot workshop by Manipal Open Source Society
+
 
 ## Prerequisites
 
